@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>期貨槓桿風控與 00685L 關係計算機 (含風險矩陣圖)</title>
+    <style>
+        :root {
+            --primary-color: #e63946;
+            --secondary-color: #457b9d;
+            --background-color: #f1f5f9;
+            --card-color: #ffffff;
+            --text-color: #0f172a;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.5;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            color: var(--text-color);
+            margin-bottom: 25px;
+            font-weight: 800;
+        }
+        .grid-main {
+            display: grid;
+            grid-template-columns: 380px 1fr;
+            gap: 20px;
+        }
+        @media (max-width: 992px) {
+            .grid-main {
+                grid-template-columns: 1fr;
+            }
+        }
+        .card {
+            background: var(--card-color);
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 16px;
+        }
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 6px;
+            font-size: 0.9em;
+            color: #475569;
+        }
+        input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 1em;
+            color: var(--text-color);
+        }
+        input:focus {
+            outline: none;
+            border-color: var(--secondary-color);
+            box-shadow: 0 0 0 3px rgba(69, 123, 157, 0.15);
+        }
+        .section-title {
+            margin: 0 0 16px 0;
+            font-size: 1.1em;
+            font-weight: 700;
+            border-left: 4px solid var(--secondary-color);
+            padding-left: 8px;
+        }
+        .grid-results {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        @media (max-width: 576px) {
+            .grid-results {
+                grid-template-columns: 1fr;
+            }
+        }
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        .result-val {
+            font-weight: 700;
+        }
+        .highlight-lev {
+            font-size: 1.3em;
+            color: var(--primary-color);
+        }
+        .canvas-container {
+            text-align: center;
+            margin-top: 15px;
+        }
+        canvas {
+            background: #fff;
+            max-width: 100%;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>期貨槓桿風控與 00685L 試算看板</h1>
+    
+    <div class="grid-main">
+        <div>
+            <div class="card">
+                <div class="section-title" style="border-left-color: #64748b;">基本參數輸入</div>
+                <div class="form-group">
+                    <label for="indexPrice">當前台指期貨指數 (點)</label>
+                    <input type="number" id="indexPrice" value="46752" oninput="calculateAll()">
+                </div>
+                <div class="form-group">
+                    <label for="equity">帳戶目前權益總值 (元)</label>
+                    <input type="number" id="equity" value="2352660" oninput="calculateAll()">
+                </div>
+                <div class="form-group">
+                    <label for="miniQty">小台指口數 (買單)</label>
+                    <input type="number" id="miniQty" value="2" oninput="calculateAll()">
+                </div>
+                <div class="form-group">
+                    <label for="microQty">微台指口數 (買單)</label>
+                    <input type="number" id="microQty" value="5" oninput="calculateAll()">
+                </div>
+                <div class="form-group">
+                    <label for="otherMargin">其餘非台指保證金 (元)</label>
+                    <input type="number" id="otherMargin" value="49613" oninput="calculateAll()">
+                </div>
+                <div class="form-group">
+                    <label for="etfPrice">00685L 目前市價 (元)</label>
+                    <input type="number" id="etfPrice" value="306.75" step="0.05" oninput="calculateAll()">
+                </div>
+            </div>
+        </div>
+        
+        <div>
+            <div class="card">
+                <div class="grid-results">
+                    <div>
+                        <div class="section-title" style="border-left-color: #e63946;">當前期貨部位分析</div>
+                        <div class="result-item"><span>台指總合約價值:</span><span id="totalContractVal" class="result-val">0 元</span></div>
+                        <div class="result-item"><span>調整後淨權益:</span><span id="adjEquity" class="result-val">0 元</span></div>
+                        <div class="result-item"><span>當前實質槓桿:</span><span id="currentLeverage" class="result-val highlight-lev">0 倍</span></div>
+                        <div class="result-item"><span>2.5倍槓桿建議:</span><span id="rec25" class="result-val" style="color:#457b9d;">-</span></div>
+                        <div class="result-item"><span>3.0倍槓桿建議:</span><span id="rec30" class="result-val" style="color:#457b9d;">-</span></div>
+                    </div>
+                    <div>
+                        <div class="section-title" style="border-left-color: #2a9d8f;">換成 00685L (正2) 對比</div>
+                        <div class="result-item"><span>全額可買張數:</span><span id="etfShares" class="result-val" style="color:#2a9d8f;">0 張</span></div>
+                        <div class="result-item"><span>轉換後總曝險:</span><span id="etfExposure" class="result-val">0 元</span></div>
+                        <div class="result-item"><span>轉換後槓桿:</span><span class="result-val" style="color: #2a9d8f;">固定 2.0 倍</span></div>
+                        <div class="result-item" style="border-bottom:none; font-size:0.82em; color:#64748b; margin-top:5px;">
+                            * 註：正2現貨無強制斷頭與追繳風險。
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="section-title" style="border-left-color: #f4a261;">實時動態風險矩陣圖 (橫軸:大盤漲跌 / 縱軸:實質槓桿)</div>
+                <div class="canvas-container">
+                    <canvas id="riskMatrixCanvas" width="700" height="350"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function calculateAll() {
+    // 1. 讀取數據
+    const indexPrice = parseFloat(document.getElementById('indexPrice').value) || 0;
+    const equity = parseFloat(document.getElementById('equity').value) || 0;
+    const miniQty = parseFloat(document.getElementById('miniQty').value) || 0;
+    const microQty = parseFloat(document.getElementById('microQty').value) || 0;
+    const otherMargin = parseFloat(document.getElementById('otherMargin').value) || 0;
+    const etfPrice = parseFloat(document.getElementById('etfPrice').value) || 0;
+
+    // 2. 計算基礎指標
+    const totalMultiplier = (miniQty * 50) + (microQty * 10);
+    const totalContractVal = totalMultiplier * indexPrice;
+    const adjEquity = equity - otherMargin;
+    const currentLeverage = adjEquity > 0 ? (totalContractVal / adjEquity) : 0;
+
+    // 渲染基礎指標
+    document.getElementById('totalContractVal').innerText = totalContractVal.toLocaleString() + " 元";
+    document.getElementById('adjEquity').innerText = adjEquity.toLocaleString() + " 元";
+    document.getElementById('currentLeverage').innerText = currentLeverage.toFixed(2) + " 倍";
+
+    // 3. 計算增減建议
+    function getRecStr(targetLev) {
+        if (adjEquity <= 0 || totalMultiplier === 0) return "N/A";
+        const diffMicro = (totalContractVal - (targetLev * adjEquity)) / (10 * indexPrice);
+        if (diffMicro > 0.05) return `需減 ${diffMicro.toFixed(1)} 口微台`;
+        if (diffMicro < -0.05) return `可加 ${Math.abs(diffMicro).toFixed(1)} 口微台`;
+        return "保持現狀";
+    }
+    document.getElementById('rec25').innerText = getRecStr(2.5);
+    document.getElementById('rec30').innerText = getRecStr(3.0);
+
+    // 4. ETF對比
+    if (etfPrice > 0) {
+        document.getElementById('etfShares').innerText = (equity / (etfPrice * 1000)).toFixed(2) + " 張";
+        document.getElementById('etfExposure').innerText = (equity * 2).toLocaleString() + " 元";
+    }
+
+    // 5. 繪製二維動態風險矩陣
+    drawRiskMatrix(indexPrice, currentLeverage);
+}
+
+function drawRiskMatrix(currentIdx, currentLev) {
+    const canvas = document.getElementById('riskMatrixCanvas');
+    const ctx = canvas.getContext('2d');
+    const w = canvas.width;
+    const h = canvas.height;
+    
+    // 清空畫布
+    ctx.clearRect(0, 0, w, h);
+    
+    // 定義內邊距
+    const padL = 60, padR = 40, padT = 30, padB = 50;
+    const graphW = w - padL - padR;
+    const graphH = h - padT - padB;
+
+    // 橫軸 (大盤變動 %): -30% 到 +10%
+    const minPct = -30, maxPct = 10;
+    // 縱軸 (槓桿倍數): 1.0 到 5.0 倍
+    const minLev = 1.0, maxLev = 5.0;
+
+    // 輔助函數：將 數據 映射到 畫布座標
+    function getX(pct) { return padL + ((pct - minPct) / (maxPct - minPct)) * graphW; }
+    function getY(lev) { return padT + (1 - (lev - minLev) / (maxLev - minLev)) * graphH; }
+
+    // 1. 繪製背景色塊 (風險分區：綠/黃/紅)
+    // 綠色安全區 (槓桿 <= 2.5)
+    ctx.fillStyle = 'rgba(42, 157, 143, 0.15)';
+    ctx.fillRect(padL, getY(2.5), graphW, getY(1.0) - getY(2.5));
+    
+    // 黃色警戒區 (2.5 < 槓桿 <= 3.5)
+    ctx.fillStyle = 'rgba(244, 162, 97, 0.15)';
+    ctx.fillRect(padL, getY(3.5), graphW, getY(2.5) - getY(3.5));
+
+    // 紅色危險區 (槓桿 > 3.5)
+    ctx.fillStyle = 'rgba(230, 57, 70, 0.15)';
+    ctx.fillRect(padL, padT, graphW, getY(3.5) - padT);
+
+    // 2. 畫網格線與座標軸
+    ctx.strokeStyle = '#e2e8f0';
+    ctx.lineWidth = 1;
+    
+    // 縱向網格 (% 刻度)
+    ctx.fillStyle = '#64748b';
+    ctx.font = '11px sans-serif';
+    ctx.textAlign = 'center';
+    for (let p = minPct; p <= maxPct; p += 10) {
+        let x = getX(p);
+        ctx.beginPath(); ctx.moveTo(x, padT); ctx.lineTo(x, h - padB); ctx.stroke();
+        ctx.fillText((p >= 0 ? '+' : '') + p + '%', x, h - padB + 18);
+    }
+
+    // 橫向網格 (槓桿刻度)
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    for (let l = minLev; l <= maxLev; l += 0.5) {
+        let y = getY(l);
+        ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(w - padR, y); ctx.stroke();
+        ctx.fillText(l.toFixed(1) + 'x', padL - 8, y);
+    }
+
+    // 3. 標籤文字
+    ctx.fillStyle = '#334155';
+    ctx.font = 'bold 12px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('← 大盤下跌 (預估風險)  |  大盤上漲 →', padL + graphW/2, h - 12);
+    
+    ctx.save();
+    ctx.translate(15, padT + graphH/2);
+    ctx.rotate(-Math.PI/2);
+    ctx.fillText('帳戶實質槓桿倍數', 0, 0);
+    ctx.restore();
+
+    // 4. 標示「當前位置點」
+    if (currentLev >= minLev && currentLev <= maxLev) {
+        let curX = getX(0); // 當前未漲跌即為 0%
+        let curY = getY(currentLev);
+
+        // 畫定位十字虛線
+        ctx.strokeStyle = '#475569';
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath(); ctx.moveTo(curX, padT); ctx.lineTo(curX, h - padB); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(padL, curY); ctx.lineTo(w - padR, curY); ctx.stroke();
+        ctx.setLineDash([]); // 恢復實線
+
+        // 畫當前位置大圓點
+        ctx.fillStyle = '#1d3557';
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(curX, curY, 7, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.stroke();
+
+        // 提示文字
+        ctx.fillStyle = '#1d3557';
+        ctx.font = 'bold 11px sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText(' 當前現狀 (' + currentLev.toFixed(2) + 'x)', curX + 8, curY - 4);
+    }
+}
+
+// 初始觸發
+window.onload = calculateAll;
+</script>
+
+</body>
+</html>
