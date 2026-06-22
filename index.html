@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>期貨槓桿風控與 00685L 關係計算機</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="container">
+    <h1>期貨槓桿風控與 00685L 試算看板</h1>
+    
+    <div class="grid-main">
+        <div>
+            <div class="card">
+                <div class="section-title" style="border-left-color: #64748b;">基本參數輸入</div>
+                <div class="form-group">
+                    <label for="indexPrice">當前台指期貨指數 (點)</label>
+                    <input type="number" id="indexPrice" value="46752">
+                </div>
+                <div class="form-group">
+                    <label for="equity">帳戶目前權益總值 (元)</label>
+                    <input type="number" id="equity" value="2352660">
+                </div>
+                <div class="form-group">
+                    <label for="miniQty">小台指口數 (買單)</label>
+                    <input type="number" id="miniQty" value="2">
+                </div>
+                <div class="form-group">
+                    <label for="microQty">微台指口數 (買單)</label>
+                    <input type="number" id="microQty" value="5">
+                </div>
+                <div class="form-group">
+                    <label for="otherMargin">其餘非台指保證金 (元)</label>
+                    <input type="number" id="otherMargin" value="49613">
+                </div>
+                <div class="form-group">
+                    <label for="etfPrice">00685L 目前市價 (元)</label>
+                    <input type="number" id="etfPrice" value="306.75" step="0.05">
+                </div>
+            </div>
+        </div>
+        
+        <div>
+            <div class="card">
+                <div class="grid-results">
+                    <div>
+                        <div class="section-title" style="border-left-color: #e63946;">當前期貨部位分析</div>
+                        <div class="result-item"><span>台指總合約價值:</span><span id="totalContractVal" class="result-val">0 元</span></div>
+                        <div class="result-item"><span>調整後淨權益:</span><span id="adjEquity" class="result-val">0 元</span></div>
+                        <div class="result-item"><span>當前實質槓桿:</span><span id="currentLeverage" class="result-val highlight-lev">0 倍</span></div>
+                        <div class="result-item"><span>2.5倍槓桿建議:</span><span id="rec25" class="result-val" style="color:#457b9d;">-</span></div>
+                        <div class="result-item"><span>3.0倍槓桿建議:</span><span id="rec30" class="result-val" style="color:#457b9d;">-</span></div>
+                    </div>
+                    <div>
+                        <div class="section-title" style="border-left-color: #2a9d8f;">換成 00685L (正2) 對比</div>
+                        <div class="result-item"><span>全額可買張數:</span><span id="etfShares" class="result-val" style="color:#2a9d8f;">0 張</span></div>
+                        <div class="result-item"><span>轉換後總曝險:</span><span id="etfExposure" class="result-val">0 元</span></div>
+                        <div class="result-item"><span>轉換後槓桿:</span><span class="result-val" style="color: #2a9d8f;">固定 2.0 倍</span></div>
+                        <div class="result-item" style="border-bottom:none; font-size:0.82em; color:#64748b; margin-top:5px;">
+                            * 註：正2現貨無強制斷頭與追繳風險。
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="section-title" style="border-left-color: #f4a261;">實時動態風險矩陣圖 (橫軸:大盤漲跌 / 縱軸:實質槓桿)</div>
+                <div class="canvas-container">
+                    <canvas id="riskMatrixCanvas" width="700" height="350"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
