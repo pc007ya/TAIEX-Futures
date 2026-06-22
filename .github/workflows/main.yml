@@ -1,0 +1,36 @@
+name: Daily Stock Data Update
+
+on:
+  schedule:
+    # 國際標準時間 (UTC) 週一至週五 07:30，即台北時間 15:30（收盤後）
+    - cron: '30 7 * * 1-5'
+  workflow_dispatch:
+
+# 強制開啟寫入權限，解決 403 權限問題
+permissions: write-all
+
+jobs:
+  update-data:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+
+    - name: Install dependencies
+      run: |
+        pip install yfinance pandas
+
+    - name: Run Crawler
+      run: python update_data.py
+
+    - name: Commit and Push changes
+      run: |
+        git config --global user.name "GitHub Actions Bot"
+        git config --global user.email "actions@github.com"
+        git add data.json
+        git diff-index --quiet HEAD || (git commit -m "🤖 自動更新：每日收盤數據" && git push)
