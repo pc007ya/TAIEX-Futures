@@ -31,3 +31,19 @@ jobs:
         git config --global user.email "actions@github.com"
         git add data.json
         git diff-index --quiet HEAD || (git commit -m "🤖 自動更新：每日收盤數據" && git push)
+
+        - name: Commit and Push changes
+      run: |
+        git config --global user.name "GitHub Actions Bot"
+        git config --global user.email "actions@github.com"
+        git add data.json
+        # 檢查是否有檔案變動，如果有才提交
+        if ! git diff-index --quiet HEAD; then
+          git commit -m "🤖 自動更新：每日收盤數據"
+          # 關鍵修正：先拉取遠端最新進度進行合併，避免衝突
+          git pull --rebase origin main
+          # 推送回遠端
+          git push origin main
+        else
+          echo "數據無變動，無需更新。"
+        fi
