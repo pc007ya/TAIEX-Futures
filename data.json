@@ -1,13 +1,12 @@
 {
   "indexPrice": 22815.0,
   "spotPrice": 22840.15,
-  "etf685lPrice": 306.75,
+  "etf50Price": 185.00,
   "etf631lPrice": 240.50,
-  "lastUpdated": "2026-07-01 13:30:00",
-  "source": "Yahoo Finance",
+  "etf685lPrice": 306.75,
+  "lastUpdated": "2026-07-02 15:30:00",
+  "source": "Yahoo Finance 初始化",
   "history": [
-    {"date": "2026-07-01", "spot": 22840.15, "future": 22815.0, "diff": -25.15, "diffPct": -0.11},
-    {"date": "2026-06-30", "spot": 22780.40, "future": 22740.0, "diff": -40.40, "diffPct": -0.18},
-    {"date": "2026-06-29", "spot": 22910.60, "future": 22855.0, "diff": -55.60, "diffPct": -0.24}
+    {"date": "2026-07-01", "spot": 22840.15, "future": 22815.0, "diff": -25.15, "diffPct": -0.11}
   ]
 }
