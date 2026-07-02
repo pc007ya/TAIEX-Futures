@@ -1,67 +1,74 @@
 import json
+import os
 from datetime import datetime
 import yfinance as yf
 
-def fetch_all_market_data():
+def fetch_rolling_market_data():
     try:
-        print("🚀 開始爬取市場真實報價...")
+        print("🚀 開始抓取今日收盤數據並更新歷史庫...")
         
-        # 1. 抓取大盤加權指數與台指期貨連續合約
-        spot_ticker = yf.Ticker("^TWII")
-        future_ticker = yf.Ticker("WTX=F")
-        
-        spot_hist = spot_ticker.history(period="5d")
-        future_hist = future_ticker.history(period="5d")
-        
-        if spot_hist.empty or future_hist.empty:
-            raise ValueError("Yahoo Finance 歷史資料獲取空值")
-            
-        # 2. 抓取三大指標現貨價格
+        # 1. 抓取當日最新數據
+        spot_val = round(yf.Ticker("^TWII").history(period="1d")['Close'].iloc[-1], 2)
+        future_val = round(yf.Ticker("WTX=F").history(period="1d")['Close'].iloc[-1], 2)
         p_50 = round(yf.Ticker("0050.TW").history(period="1d")['Close'].iloc[-1], 2)
         p_631l = round(yf.Ticker("00631L.TW").history(period="1d")['Close'].iloc[-1], 2)
         p_685l = round(yf.Ticker("00685L.TW").history(period="1d")['Close'].iloc[-1], 2)
         
-        current_spot = round(spot_hist['Close'].iloc[-1], 2)
-        current_future = round(future_hist['Close'].iloc[-1], 2)
+        date_str = datetime.now().strftime("%Y-%m-%d")
+        diff = round(future_val - spot_val, 2)
+        diff_pct = round((diff / spot_val) * 100, 2)
 
-        # 3. 建立對齊的五日歷史價差對照表
+        # 新的一天數據節點
+        new_entry = {
+            "date": date_str,
+            "spot": spot_val,
+            "future": future_val,
+            "diff": diff,
+            "diffPct": diff_pct,
+            "p50": p_50,
+            "p631l": p_631l,
+            "p685l": p_685l
+        }
+
+        # 2. 讀取現有的歷史紀錄
         history_list = []
-        for i in range(len(spot_hist)):
-            s_val = round(spot_hist['Close'].iloc[i], 2)
+        if os.path.exists("data.json"):
             try:
-                f_val = round(future_hist['Close'].iloc[i], 2)
-            except IndexError:
-                f_val = s_val - 25.0
-                
-            diff = round(f_val - s_val, 2)
-            diff_pct = round((diff / s_val) * 100, 2)
-            date_str = spot_hist.index[i].strftime("%Y-%m-%d")
-            
-            history_list.append({
-                "date": date_str, "spot": s_val, "future": f_val, "diff": diff, "diffPct": diff_pct
-            })
-        
-        history_list.reverse()
+                with open("data.json", "r", encoding="utf-8") as f:
+                    old_data = json.load(f)
+                    history_list = old_data.get("history", [])
+            except Exception:
+                pass
 
-        # 4. 寫入擴展資料庫
+        # 3. 避免同一個交易日重複寫入
+        if history_list and history_list[0]["date"] == date_str:
+            history_list[0] = new_entry  # 如果日期相同就更新
+        else:
+            history_list.insert(0, new_entry)  # 如果是新的一天就插在最前面
+
+        # 🔥 核心控制：只保留最近 30 筆交易日資料 (約近1個月)
+        if len(history_list) > 30:
+            history_list = history_list[:30]
+
+        # 4. 包裝並覆寫回 data.json
         updated_data = {
-            "indexPrice": current_future,
-            "spotPrice": current_spot,
+            "indexPrice": future_val,
+            "spotPrice": spot_val,
             "etf50Price": p_50,
             "etf631lPrice": p_631l,
             "etf685lPrice": p_685l,
             "lastUpdated": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "source": "Yahoo Finance 全即時數據流",
+            "source": "Yahoo Finance (近1個月真實滾動數據庫)",
             "history": history_list
         }
 
         with open("data.json", "w", encoding="utf-8") as f:
             json.dump(updated_data, f, ensure_ascii=False, indent=2)
             
-        print("🎉 數據同步成功！")
+        print(f"🎉 歷史庫更新成功！目前已累積 {len(history_list)} 天真實數據。")
 
     except Exception as e:
-        print(f"❌ 爬蟲異常: {e}")
+        print(f"❌ 滾動更新異常: {e}")
 
 if __name__ == "__main__":
-    fetch_all_market_data()
+    fetch_rolling_market_data()
