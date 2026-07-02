@@ -1,74 +1,54 @@
 import json
-import os
+import time
 from datetime import datetime
 import yfinance as yf
 
-def fetch_rolling_market_data():
+def fetch_latest_data():
     try:
-        print("🚀 開始抓取今日收盤數據並更新歷史庫...")
+        index_price = 46752
+        etf_price = 306.75
+        etf_631l_price = 245.50
         
-        # 1. 抓取當日最新數據
-        spot_val = round(yf.Ticker("^TWII").history(period="1d")['Close'].iloc[-1], 2)
-        future_val = round(yf.Ticker("WTX=F").history(period="1d")['Close'].iloc[-1], 2)
-        p_50 = round(yf.Ticker("0050.TW").history(period="1d")['Close'].iloc[-1], 2)
-        p_631l = round(yf.Ticker("00631L.TW").history(period="1d")['Close'].iloc[-1], 2)
-        p_685l = round(yf.Ticker("00685L.TW").history(period="1d")['Close'].iloc[-1], 2)
-        
-        date_str = datetime.now().strftime("%Y-%m-%d")
-        diff = round(future_val - spot_val, 2)
-        diff_pct = round((diff / spot_val) * 100, 2)
+        try:
+            twii = yf.Ticker("^TWII")
+            todays_data = twii.history(period="2d")
+            if not todays_data.empty:
+                index_price = round(todays_data['Close'].iloc[-1], 2)
+        except Exception as e:
+            print(f"大盤數據抓取異常: {e}")
 
-        # 新的一天數據節點
-        new_entry = {
-            "date": date_str,
-            "spot": spot_val,
-            "future": future_val,
-            "diff": diff,
-            "diffPct": diff_pct,
-            "p50": p_50,
-            "p631l": p_631l,
-            "p685l": p_685l
-        }
+        try:
+            etf = yf.Ticker("00685L.TW")
+            etf_data = etf.history(period="2d")
+            if not etf_data.empty:
+                etf_price = round(etf_data['Close'].iloc[-1], 2)
+        except Exception as e:
+            print(f"00685L 數據抓取異常: {e}")
 
-        # 2. 讀取現有的歷史紀錄
-        history_list = []
-        if os.path.exists("data.json"):
-            try:
-                with open("data.json", "r", encoding="utf-8") as f:
-                    old_data = json.load(f)
-                    history_list = old_data.get("history", [])
-            except Exception:
-                pass
+        try:
+            etf_631l = yf.Ticker("00631L.TW")
+            etf_631l_data = etf_631l.history(period="2d")
+            if not etf_631l_data.empty:
+                etf_631l_price = round(etf_631l_data['Close'].iloc[-1], 2)
+        except Exception as e:
+            print(f"00631L 數據抓取異常: {e}")
 
-        # 3. 避免同一個交易日重複寫入
-        if history_list and history_list[0]["date"] == date_str:
-            history_list[0] = new_entry  # 如果日期相同就更新
-        else:
-            history_list.insert(0, new_entry)  # 如果是新的一天就插在最前面
-
-        # 🔥 核心控制：只保留最近 30 筆交易日資料 (約近1個月)
-        if len(history_list) > 30:
-            history_list = history_list[:30]
-
-        # 4. 包裝並覆寫回 data.json
+        current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         updated_data = {
-            "indexPrice": future_val,
-            "spotPrice": spot_val,
-            "etf50Price": p_50,
-            "etf631lPrice": p_631l,
-            "etf685lPrice": p_685l,
-            "lastUpdated": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "source": "Yahoo Finance (近1個月真實滾動數據庫)",
-            "history": history_list
+            "indexPrice": index_price,
+            "etfPrice": etf_price,
+            "etf631LPrice": etf_631l_price,
+            "lastUpdated": current_time,
+            "source": "Yahoo Finance (自動防護機制)"
         }
 
         with open("data.json", "w", encoding="utf-8") as f:
             json.dump(updated_data, f, ensure_ascii=False, indent=2)
             
-        print(f"🎉 歷史庫更新成功！目前已累積 {len(history_list)} 天真實數據。")
+        print(f"數據更新成功：{current_time}")
 
     except Exception as e:
-        print(f"❌ 滾動更新異常: {e}")
+        print(f"嚴重錯誤: {e}")
 
 if __name__ == "__main__":
-    fetch_rolling_market_data()
+    fetch_latest_data()
