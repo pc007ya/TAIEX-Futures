@@ -2,6 +2,7 @@ name: Daily Stock Data Update
 
 on:
   schedule:
+    # 台北時間週一至週五 15:30 收盤後自動執行
     - cron: '30 7 * * 1-5'
   workflow_dispatch:
 
@@ -32,7 +33,7 @@ jobs:
         git config --global user.email "actions@github.com"
         git add data.json
         if ! git diff-index --quiet HEAD; then
-          git commit -m "🤖 自動更新：每日歷史收盤與折溢價數據"
+          git commit -m "🤖 自動更新：每日收盤多維數據"
           git pull --rebase origin main
           git push origin main
         else
