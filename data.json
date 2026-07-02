@@ -1,12 +1,7 @@
 {
-  "indexPrice": 22815.0,
-  "spotPrice": 22840.15,
-  "etf50Price": 185.00,
-  "etf631lPrice": 240.50,
-  "etf685lPrice": 306.75,
+  "indexPrice": 46752,
+  "etfPrice": 306.75,
+  "etf631LPrice": 245.50,
   "lastUpdated": "2026-07-02 15:30:00",
-  "source": "Yahoo Finance 初始化",
-  "history": [
-    {"date": "2026-07-01", "spot": 22840.15, "future": 22815.0, "diff": -25.15, "diffPct": -0.11}
-  ]
+  "source": "Yahoo Finance (自動防護機制)"
 }
