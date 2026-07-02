@@ -75,43 +75,71 @@ function renderDashboard() {
     drawStrategyCurves(idxPrice);
 }
 
-// 繪製橫軸每 2.5% 一格的風險矩陣
+// 繪製 Y 軸以當前部位為中心，上下各調整 5 口微台的動態風險矩陣
 function render2DMatrix(basePrice, totalEquity, otherMargin) {
     const container = document.getElementById('matrixTable');
     if (!container) return;
 
-    // 橫軸每 2.5% 一格 (-20% ~ +20%)
+    // 1. 讀取當前使用者輸入的口數，並換算成「總微台點數規模」作為基準中心
+    const currentMiniQty = parseFloat(document.getElementById('miniQty').value) || 0;
+    const currentMicroQty = parseFloat(document.getElementById('microQty').value) || 0;
+    
+    // 將當前總部位換算成「微台口數」：1口小台 = 5口微台
+    const centerMicroEquivalent = (currentMiniQty * 5) + currentMicroQty;
+
+    // 2. 橫軸（X軸）：每 2.5% 一格 (-20% ~ +20%)
     const pctTicks = [];
     for (let p = -20; p <= 20; p += 2.5) pctTicks.push(p);
 
-    // 縱軸持倉口數組合
-    const rows = [1, 2, 3, 4, 5, 6, 8, 10];
+    // 3. 縱軸（Y軸）：以中心點上下各推 5 口微台
+    const rowOffsets = [5, 4, 3, 2, 1, 0, -1, -2, -3, -4, -5]; // 由多到少排序，符合視覺習慣
 
     // 建立表頭
-    let html = `<thead><tr><th>持倉口數</th>`;
+    let html = `<thead><tr><th>調整口數 (微台)</th>`;
     pctTicks.forEach(p => html += `<th>${p > 0 ? '+' : ''}${p}%</th>`);
     html += `</tr></thead><tbody>`;
 
-    // 假設小台維持保證金 41,000 元，微台 8,200 元 (實務上隨期交所變動)
     const adjEquityBase = totalEquity - otherMargin;
 
-    rows.forEach(qty => {
-        // 以當前輸入的小台微台比例當基準，或是這裡我們統一簡化成換算後的「總微台口數」來做2D矩陣多維對照
-        // 為了完美重現圖片邏輯：縱軸代表「不同合約口數下的維持率變化」
-        html += `<tr><td style="font-weight:bold;">${qty} 口</td>`;
+    // 4. 動態橫向與縱向交叉計算
+    rowOffsets.forEach(offset => {
+        // 計算該列對應的虛擬總微台口數
+        const simulatedTotalMicro = centerMicroEquivalent + offset;
         
+        // 房外防護：如果減倉減到小於 0 口，則不呈現或顯示空倉
+        if (simulatedTotalMicro < 0) return;
+
+        // 標記目前現狀那一列
+        const isCenterRow = (offset === 0);
+        const rowStyle = isCenterRow ? `style="background: #1f293d; border: 2px solid #58a6ff;"` : '';
+        const rowLabel = isCenterRow ? `當前部位` : `${offset > 0 ? '+' : ''}${offset} 口`;
+
+        html += `<tr ${rowStyle}>`;
+        html += `<td style="font-weight:bold; color: ${isCenterRow ? '#58a6ff' : 'var(--text-main)'};">${rowLabel}</td>`;
+        
+        // 遍歷 X 軸漲跌幅
         pctTicks.forEach(p => {
             const targetPrice = basePrice * (1 + p / 100);
             const priceDiff = targetPrice - basePrice;
             
-            // 每點合約價值 (以每口150元乘數試算)
-            const roundMultiplier = (miniQty * 50 + microQty * 10) * (qty / (miniQty + microQty / 5 || 1));
-            const totalRequiredMaintenance = (qty * 41000); // 基準維持保證金估算
+            // 計算該部位在該跌幅下的權益變動 (每 1 口微台點值為 10 元)
+            const simulatedEquity = adjEquityBase + (priceDiff * simulatedTotalMicro * 10);
+            
+            // 台灣期交所微台維持保證金目前約為 8,200 元 (此處以此作為矩陣分母基準)
+            const totalRequiredMaintenance = simulatedTotalMicro * 8200;
 
-            const simulatedEquity = adjEquityBase + (priceDiff * (qty * 50)); // 假設以小台規模模擬
-            const ratio = (simulatedEquity / totalRequiredMaintenance) * 100;
+            // 計算預估維持率
+            let ratio = 0;
+            if (totalRequiredMaintenance > 0) {
+                ratio = (simulatedEquity / totalRequiredMaintenance) * 100;
+            } else {
+                ratio = simulatedEquity > 0 ? 9999 : 0; // 空倉狀態
+            }
 
-            if (ratio <= 47 || simulatedEquity <= 0) {
+            // 判斷風險燈號
+            if (simulatedTotalMicro === 0) {
+                html += `<td class="m-safe" style="color: #8b949e;">無曝險</td>`;
+            } else if (ratio <= 47 || simulatedEquity <= 0) {
                 html += `<td class="m-danger">⚠️ 斷頭</td>`;
             } else if (ratio < 130) {
                 html += `<td class="m-warn">${Math.round(ratio)}%</td>`;
@@ -125,7 +153,6 @@ function render2DMatrix(basePrice, totalEquity, otherMargin) {
     html += `</tbody>`;
     container.innerHTML = html;
 }
-
 // 多維度策略路徑 Canvas 模擬曲線
 function drawStrategyCurves(currentPrice) {
     const canvas = document.getElementById('strategyCanvas');
