@@ -3,28 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>期貨部位曝險與「保證金維持率」2D風險評估矩陣</title>
+    <title>期貨槓桿風控與正2 ETF 關係計算機</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
 <div class="container">
-    <h1>📊 期貨部位曝險與「保證金維持率」2D 風險評估矩陣</h1>
+    <h1>期貨槓桿風控與正2 ETF 試算看板</h1>
     
     <div class="grid-main">
         <div>
             <div class="card">
-                <div class="card-header">
-                    <div class="section-title">💡 基本參數輸入</div>
-                    <button id="btnReset" class="btn-reset">🔄 重置</button>
-                </div>
+                <div class="section-title" style="border-left-color: #64748b;">基本參數輸入</div>
                 <div class="form-group">
                     <label for="indexPrice">當前台指期貨指數 (點)</label>
-                    <input type="number" id="indexPrice" value="22815">
-                </div>
-                <div class="form-group">
-                    <label for="spotPrice">加權指數大盤現貨 (點)</label>
-                    <input type="number" id="spotPrice" value="22840.15" disabled style="background: #21262d; color: #8b949e; cursor: not-allowed;">
+                    <input type="number" id="indexPrice" value="46752">
                 </div>
                 <div class="form-group">
                     <label for="equity">帳戶目前權益總值 (元)</label>
@@ -43,64 +36,54 @@
                     <input type="number" id="otherMargin" value="0">
                 </div>
                 <div class="form-group">
-                    <label for="etf50Price">0050 元大台灣50 目前市價 (元)</label>
-                    <input type="number" id="etf50Price" value="185.00" step="0.05">
+                    <label for="etfPrice">00685L 目前市價 (元)</label>
+                    <input type="number" id="etfPrice" value="306.75" step="0.05">
                 </div>
                 <div class="form-group">
-                    <label for="etf631lPrice">00631L 元大正2 目前市價 (元)</label>
-                    <input type="number" id="etf631lPrice" value="240.50" step="0.05">
-                </div>
-                <div class="form-group">
-                    <label for="etf685lPrice">00685L 群益正2 目前市價 (元)</label>
-                    <input type="number" id="etf685lPrice" value="306.75" step="0.05">
+                    <label for="etf631LPrice">00631L 目前市價 (元)</label>
+                    <input type="number" id="etf631LPrice" value="245.50" step="0.05">
                 </div>
                 
-                <div id="update-info-tag">
-                    <div>🔄 自動更新：<span id="lblLastUpdated">載入中...</span></div>
-                    <div>📍 數據來源：<span id="lblSource">載入中...</span></div>
+                <button id="btnReset" class="btn-reset">還原為今日收盤預設值</button>
+                
+                <div id="update-info-tag" style="margin-top: 20px; padding-top: 12px; border-top: 1px dashed #cbd5e1; font-size: 0.82em; color: #64748b;">
+                    <div>🔄 自動更新：<span id="lblLastUpdated" style="font-weight: 600; color: #334155;">載入中...</span></div>
+                    <div style="margin-top: 4px;">📍 數據來源：<span id="lblSource" style="font-weight: 600; color: #334155;">載入中...</span></div>
                 </div>
-            </div>
-
-            <div class="card" style="max-height: 350px; overflow-y: auto;">
-                <div class="section-title" style="border-left-color: #2a9d8f;">📋 歷史收盤與價差對照表</div>
-                <p style="font-size: 0.8em; color: #8b949e; margin-bottom: 8px;">💡 點擊下方任一歷史紀錄，即可將當日指數與期現貨價格載入。</p>
-                <table class="history-table">
-                    <thead>
-                        <tr>
-                            <th>日期</th>
-                            <th>現貨/期貨</th>
-                            <th>價差/折價</th>
-                        </tr>
-                    </thead>
-                    <tbody id="historyTableBody">
-                        </tbody>
-                </table>
             </div>
         </div>
         
         <div>
             <div class="card">
-                <div class="section-title" style="border-left-color: #e63946;">🧮 預估保證金維持率 (%) 2D 風險評估矩陣 (橫軸每2.5%一格)</div>
-                <div style="overflow-x: auto; margin-top: 15px;">
-                    <table class="matrix-table" id="matrixTable">
-                        </table>
+                <div class="grid-results">
+                    <div>
+                        <div class="section-title" style="border-left-color: #e63946;">當前期貨部位分析</div>
+                        <div class="result-item"><span>台指總合約價值:</span><span id="totalContractVal" class="result-val">0 元</span></div>
+                        <div class="result-item"><span>調整後淨權益:</span><span id="adjEquity" class="result-val">0 元</span></div>
+                        <div class="result-item"><span>當前實質槓桿:</span><span id="currentLeverage" class="result-val highlight-lev">0 倍</span></div>
+                        <div class="result-item"><span>2.5倍槓桿建議:</span><span id="rec25" class="result-val" style="color:#457b9d;">-</span></div>
+                        <div class="result-item"><span>3.0倍槓桿建議:</span><span id="rec30" class="result-val" style="color:#457b9d;">-</span></div>
+                    </div>
+                    <div>
+                        <div class="section-title" style="border-left-color: #2a9d8f;">換成 兩大加權正2 對比</div>
+                        <div style="background: #f8fafc; padding: 8px; border-radius: 6px; margin-bottom: 8px;">
+                            <div style="font-size: 0.85em; font-weight: bold; color: #475569;">群益加權正2 (00685L)</div>
+                            <div class="result-item" style="border:none; padding: 2px 0;"><span>全額可買張數:</span><span id="etfShares" class="result-val" style="color:#2a9d8f;">0 張</span></div>
+                        </div>
+                        <div style="background: #f8fafc; padding: 8px; border-radius: 6px; margin-bottom: 8px;">
+                            <div style="font-size: 0.85em; font-weight: bold; color: #475569;">元大台灣50正2 (00631L)</div>
+                            <div class="result-item" style="border:none; padding: 2px 0;"><span>全額可買張數:</span><span id="etf631LShares" class="result-val" style="color:#2a9d8f;">0 張</span></div>
+                        </div>
+                        <div class="result-item"><span>轉換後總曝險:</span><span id="etfExposure" class="result-val">0 元</span></div>
+                        <div class="result-item"><span>轉換後槓桿:</span><span class="result-val" style="color: #2a9d8f;">固定 2.0 倍</span></div>
+                    </div>
                 </div>
             </div>
 
             <div class="card">
-                <div class="section-title" style="border-left-color: #f4a261;">📈 多維度策略路徑模擬曲線 (自由勾選對比)</div>
-                
-                <div class="checkbox-group">
-                    <label><input type="checkbox" id="chkBase" checked> <span class="dot red"></span> 加權指數基準線 (1x 基準)</label>
-                    <label><input type="checkbox" id="chkFutureLong" checked> <span class="dot blue"></span> 期指長投策略 (含定存利息)</label>
-                    <label><input type="checkbox" id="chk0050" checked> <span class="dot green"></span> 元大台灣50 (0050 ETF)</label>
-                    <label><input type="checkbox" id="chk00631l" checked> <span class="dot yellow"></span> 元大台灣50正2 (00631L)</label>
-                    <label><input type="checkbox" id="chk00685l" checked> <span class="dot orange"></span> 群益台灣加權正2 (00685L)</label>
-                    <label><input type="checkbox" id="chkCustom" checked> <span class="dot purple"></span> 自訂期貨部位淨值曲線</label>
-                </div>
-
+                <div class="section-title" style="border-left-color: #f4a261;">實時動態風險矩陣圖 (橫軸:大盤漲跌 / 縱軸:實質槓桿)</div>
                 <div class="canvas-container">
-                    <canvas id="strategyCanvas" width="750" height="320"></canvas>
+                    <canvas id="riskMatrixCanvas" width="700" height="350"></canvas>
                 </div>
             </div>
         </div>
