@@ -2,10 +2,11 @@ name: Daily Stock Data Update
 
 on:
   schedule:
-    # 台北時間週一至週五 15:30 收盤後自動執行
+    # 國際標準時間 (UTC) 週一至週五 07:30，即台北時間 15:30（收盤後）
     - cron: '30 7 * * 1-5'
   workflow_dispatch:
 
+# 強制開啟權限授權，解決 GitHub 預設對 Action 唯讀導致的 403 推送錯誤
 permissions: write-all
 
 jobs:
@@ -33,9 +34,9 @@ jobs:
         git config --global user.email "actions@github.com"
         git add data.json
         if ! git diff-index --quiet HEAD; then
-          git commit -m "🤖 自動更新：每日收盤多維數據"
+          git commit -m "🤖 自動更新：每日收盤數據"
           git pull --rebase origin main
           git push origin main
         else
-          echo "無數據變動"
+          echo "數據無變動，無需更新。"
         fi
