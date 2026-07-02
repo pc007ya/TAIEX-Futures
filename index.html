@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>期貨部位曝險與 2D 風險評估矩陣看板</title>
+    <title>期貨部位曝險與「保證金維持率」2D風險評估矩陣</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -23,20 +23,28 @@
                     <input type="number" id="indexPrice" value="22815">
                 </div>
                 <div class="form-group">
+                    <label for="spotPrice">加權指數大盤現貨 (點)</label>
+                    <input type="number" id="spotPrice" value="22840.15" disabled style="background: #21262d; color: #8b949e; cursor: not-allowed;">
+                </div>
+                <div class="form-group">
                     <label for="equity">帳戶目前權益總值 (元)</label>
-                    <input type="number" id="equity" value="2352660">
+                    <input type="number" id="equity" value="2211000">
                 </div>
                 <div class="form-group">
                     <label for="miniQty">小台指口數 (買單)</label>
-                    <input type="number" id="miniQty" value="2">
+                    <input type="number" id="miniQty" value="0">
                 </div>
                 <div class="form-group">
                     <label for="microQty">微台指口數 (買單)</label>
-                    <input type="number" id="microQty" value="5">
+                    <input type="number" id="microQty" value="15">
                 </div>
                 <div class="form-group">
                     <label for="otherMargin">其餘非台指保證金 (元)</label>
-                    <input type="number" id="otherMargin" value="49613">
+                    <input type="number" id="otherMargin" value="0">
+                </div>
+                <div class="form-group">
+                    <label for="etf50Price">0050 元大台灣50 目前市價 (元)</label>
+                    <input type="number" id="etf50Price" value="185.00" step="0.05">
                 </div>
                 <div class="form-group">
                     <label for="etf631lPrice">00631L 元大正2 目前市價 (元)</label>
@@ -53,9 +61,9 @@
                 </div>
             </div>
 
-            <div class="card" style="max-height: 400px; overflow-y: auto;">
+            <div class="card" style="max-height: 350px; overflow-y: auto;">
                 <div class="section-title" style="border-left-color: #2a9d8f;">📋 歷史收盤與價差對照表</div>
-                <p style="font-size: 0.8em; color: #888; margin-bottom: 8px;">💡 點擊下方歷史紀錄，即可將當日指數載入左側計算器中。</p>
+                <p style="font-size: 0.8em; color: #8b949e; margin-bottom: 8px;">💡 點擊下方任一歷史紀錄，即可將當日指數與期現貨價格載入。</p>
                 <table class="history-table">
                     <thead>
                         <tr>
@@ -72,27 +80,27 @@
         
         <div>
             <div class="card">
-                <div class="section-title" style="border-left-color: #e63946;">🧮 預估保證金維持率 (%) 2D 風險矩陣</div>
-                <div style="overflow-x: auto;">
+                <div class="section-title" style="border-left-color: #e63946;">🧮 預估保證金維持率 (%) 2D 風險評估矩陣 (橫軸每2.5%一格)</div>
+                <div style="overflow-x: auto; margin-top: 15px;">
                     <table class="matrix-table" id="matrixTable">
                         </table>
                 </div>
             </div>
 
             <div class="card">
-                <div class="section-title" style="border-left-color: #f4a261;">📈 多維度策略路徑模擬曲線</div>
+                <div class="section-title" style="border-left-color: #f4a261;">📈 多維度策略路徑模擬曲線 (自由勾選對比)</div>
                 
                 <div class="checkbox-group">
-                    <label><input type="checkbox" id="chkBase" checked> <span class="dot red"></span> 加權指數基準線 (1x)</label>
+                    <label><input type="checkbox" id="chkBase" checked> <span class="dot red"></span> 加權指數基準線 (1x 基準)</label>
                     <label><input type="checkbox" id="chkFutureLong" checked> <span class="dot blue"></span> 期指長投策略 (含定存利息)</label>
-                    <label><input type="checkbox" id="chk0050" checked> <span class="dot green"></span> 元大台灣50 (0050)</label>
+                    <label><input type="checkbox" id="chk0050" checked> <span class="dot green"></span> 元大台灣50 (0050 ETF)</label>
                     <label><input type="checkbox" id="chk00631l" checked> <span class="dot yellow"></span> 元大台灣50正2 (00631L)</label>
                     <label><input type="checkbox" id="chk00685l" checked> <span class="dot orange"></span> 群益台灣加權正2 (00685L)</label>
-                    <label><input type="checkbox" id="chkCustom" checked> <span class="dot purple"></span> 自訂期貨口數淨值曲線</label>
+                    <label><input type="checkbox" id="chkCustom" checked> <span class="dot purple"></span> 自訂期貨部位淨值曲線</label>
                 </div>
 
                 <div class="canvas-container">
-                    <canvas id="strategyCanvas" width="750" height="350"></canvas>
+                    <canvas id="strategyCanvas" width="750" height="320"></canvas>
                 </div>
             </div>
         </div>
