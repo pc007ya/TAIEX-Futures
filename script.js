@@ -1,6 +1,6 @@
 // 預設初始快照 (供重置使用)
 const DEFAULT_SNAPSHOT = {
-    indexPrice: 22815, equity: 2352660, miniQty: 2, microQty: 5, otherMargin: 49613, etf631lPrice: 240.50, etf685lPrice: 306.75
+    indexPrice: 22815, equity: 2211000, miniQty: 0, microQty: 15, otherMargin: 0, etf631lPrice: 240.50, etf685lPrice: 306.75
 };
 
 document.addEventListener('DOMContentLoaded', () => {
