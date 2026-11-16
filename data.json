@@ -1,7 +1,7 @@
 {
   "indexPrice": 43675.12,
-  "etfPrice": 10.4,
-  "etf631LPrice": 31.92,
-  "lastUpdated": "2026-11-13 15:38:05",
+  "etfPrice": NaN,
+  "etf631LPrice": NaN,
+  "lastUpdated": "2026-11-16 17:13:14",
   "source": "Yahoo Finance (自動防護機制)"
 }
